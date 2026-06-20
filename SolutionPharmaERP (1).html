@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Solution Pharma ERP</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f0f2f5;color:#1a1a1a}
+#loading{position:fixed;inset:0;background:linear-gradient(135deg,#0C447C,#185FA5);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;color:#fff}
+#loading h2{font-size:24px;margin-bottom:8px}
+#loading p{font-size:14px;opacity:0.8}
+.spinner{width:40px;height:40px;border:4px solid rgba(255,255,255,0.3);border-top:4px solid #fff;border-radius:50%;animation:spin 1s linear infinite;margin-bottom:20px}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div id="loading">
+  <div class="spinner"></div>
+  <h2>Solution Pharma ERP</h2>
+  <p>Cargando sistema...</p>
+</div>
+<div id="root"></div>
+
+<script>
+// ===== DATOS =====
+const USERS=[
+  {id:1,username:"admin",password:"admin123",role:"Administrador",name:"Administrador Principal"},
+  {id:2,username:"vendedor",password:"venta123",role:"Vendedor",name:"Vendedor 1"},
+  {id:3,username:"almacen",password:"almacen123",role:"Almacenero",name:"Encargado de Almacén"},
+];
+
+let inventory=[
+  {id:1,code:"MED001",nc:"AGUJA EPIDURAL",nombre:"AGUJA EPIDURAL DESCARTABLE #18G X 3 1/4",lab:"ONE JECT",lote:"4G807",pc:12,pv:20,stock:25,smin:5,smax:50,und:"UND",venc:"2029-06-01",cat:"Equipos Médicos"},
+  {id:2,code:"MED002",nc:"ASEPTO JERINGA",nombre:"JERINGA 60 CC IRRIGACION ASEPTO",lab:"ONE JECT",lote:"220825",pc:5,pv:10,stock:28,smin:10,smax:100,und:"UND",venc:"2027-07-01",cat:"Jeringas"},
+  {id:3,code:"MED003",nc:"CAMPO QUIRÚRGICO ESTERIL",nombre:"CAMPO QUIRÚRGICO SIMPLE ESTERIL 90X90CM",lab:"MEDICLAB",lote:"171504",pc:3,pv:8,stock:24,smin:10,smax:100,und:"UND",venc:"2028-01-01",cat:"Descartables"},
+  {id:4,code:"MED004",nc:"CATHETER EPIDURAL",nombre:"PERIFIX CATHETER EPIDURAL N°18 G",lab:"BRAUN",lote:"22D26A8701",pc:43,pv:51,stock:11,smin:5,smax:30,und:"UND",venc:"2027-04-01",cat:"Equipos Médicos"},
+  {id:5,code:"MED005",nc:"CERA PARA HUESO",nombre:"CERA PARA HUESO 2.5 G",lab:"TAGUM",lote:"TG250554",pc:10,pv:16,stock:5,smin:5,smax:30,und:"UND",venc:"2028-11-01",cat:"Especialidades"},
+  {id:6,code:"MED006",nc:"CUBRECALZADO",nombre:"CUBRECALZADO DESCARTABLE X 50 PARES",lab:"HID MED",lote:"2040657",pc:11,pv:15,stock:12,smin:20,smax:200,und:"CAJAS",venc:"2031-01-01",cat:"Descartables"},
+  {id:7,code:"MED007",nc:"CUBRECALZADO VENCIDO",nombre:"CUBRECALZADO DESCARTABLE X 50 PARES",lab:"FAMILY DOCTOR",lote:"PX VENCIDO",pc:11,pv:15,stock:250,smin:0,smax:300,und:"CAJAS",venc:"2025-12-01",cat:"Descartables"},
+  {id:8,code:"MED008",nc:"FRASCO",nombre:"FRASCO DE ORINA ESTERIL X 1",lab:"SAMPLIX",lote:"2100014",pc:0.5,pv:1,stock:222,smin:50,smax:500,und:"UND",venc:"2027-10-30",cat:"Descartables"},
+  {id:9,code:"MED009",nc:"GORRO VENCIDO",nombre:"GORRO DE ENFERMERA T/GUSANO X 50",lab:"FAMILY DOCTOR",lote:"PX VENCIDO",pc:4.5,pv:13,stock:2500,smin:0,smax:3000,und:"CAJAS",venc:"2025-12-01",cat:"Descartables"},
+  {id:10,code:"MED010",nc:"HEMOCOLAGENO 10X10",nombre:"HEMOCOLAGEN 10CM X10CM",lab:"UNILENE",lote:"20601355",pc:45,pv:70,stock:11,smin:3,smax:20,und:"UND",venc:"2028-06-06",cat:"Especialidades"},
+  {id:11,code:"MED011",nc:"HEMOSUCK | HEMOBACK",nombre:"SISTEMA DE DRENAJE DE HERIDAS",lab:"MEDIPLAST",lote:"SH2404021",pc:36,pv:47,stock:1,smin:3,smax:15,und:"UND",venc:"2029-04-29",cat:"Equipos Médicos"},
+  {id:12,code:"MED012",nc:"IOBAN 56X45",nombre:"IOBAN 56CM X 45CM 3M",lab:"3M",lote:"346Y79",pc:71,pv:98,stock:1,smin:2,smax:10,und:"UND",venc:"2027-10-10",cat:"Especialidades"},
+  {id:13,code:"MED013",nc:"MARCADOR DE PIEL",nombre:"MARCADOR DE PIEL PURPLE SURGICAL",lab:"TAGUM",lote:"398730",pc:12,pv:20,stock:20,smin:5,smax:40,und:"UND",venc:"2029-06-06",cat:"Descartables"},
+  {id:14,code:"MED014",nc:"MANDIL DESCARTABLE ESTERIL L",nombre:"MANDIL DESCARTABLE ESTERIL TALLA L",lab:"SMS",lote:"211E0425",pc:6.5,pv:10,stock:33,smin:10,smax:80,und:"UND",venc:"2028-08-01",cat:"Descartables"},
+  {id:15,code:"MED015",nc:"NYLON 3/0 DS30",nombre:"NYLON AZUL 3/0 DS30 PREMIUM",lab:"TAGUM",lote:"2092875",pc:3.5,pv:8,stock:24,smin:10,smax:60,und:"UND",venc:"2030-09-09",cat:"Suturas"},
+  {id:16,code:"MED016",nc:"PONCHO ESTERIL",nombre:"PONCHO QUIRURGICO DESCARTABLE ESTERIL X01",lab:"SMS",lote:"203014",pc:5.8,pv:9.5,stock:24,smin:10,smax:60,und:"UND",venc:"2028-03-02",cat:"Descartables"},
+  {id:17,code:"MED017",nc:"SABANA ESTERIL",nombre:"SABANA ESTERIL DESCARTABLE 1 1/2 PZ",lab:"SMS",lote:"2020046",pc:6.5,pv:9.5,stock:8,smin:10,smax:50,und:"UND",venc:"2029-02-02",cat:"Descartables"},
+  {id:18,code:"MED018",nc:"SURGICEL 4X8",nombre:"CELULOSA OXIDADA REGENERADA ORIGINAL 4X8",lab:"TAGUM",lote:"HO32481R",pc:130,pv:150,stock:3,smin:2,smax:10,und:"UND",venc:"2027-08-01",cat:"Especialidades"},
+  {id:19,code:"MED019",nc:"TEGADERM 10X12",nombre:"TEGADERM FILM 10CMX12CM 3M X 1",lab:"3M",lote:"344YYM",pc:3.5,pv:7.5,stock:31,smin:10,smax:80,und:"UND",venc:"2028-03-02",cat:"Descartables"},
+  {id:20,code:"MED020",nc:"VICRYL 4/0 HR15",nombre:"ACIDO POLIGLICOLICO 4/0 HR15 PREMIUM",lab:"TAGUM",lote:"2070385",pc:5.5,pv:10,stock:26,smin:10,smax:60,und:"UND",venc:"2030-07-07",cat:"Suturas"},
+  {id:21,code:"MED021",nc:"VICRYL 1 HR30",nombre:"ACIDO POLIGLICOLICO 1 HR30 PREMIUM",lab:"TAGUM",lote:"2080155",pc:5.5,pv:10,stock:22,smin:10,smax:60,und:"UND",venc:"2030-08-07",cat:"Suturas"},
+  {id:22,code:"MED022",nc:"ESPARADRAPO MICROPORE 3M",nombre:"ESPARADRAPO MICROPORE 3M",lab:"3M",lote:"345EFS",pc:5,pv:10,stock:19,smin:10,smax:60,und:"UND",venc:"2030-05-03",cat:"Descartables"},
+  {id:23,code:"MED023",nc:"HOJA DE BISTURI N°11",nombre:"HOJA DE BISTURI N°11 X 100",lab:"IQ MEDIC",lote:"230718",pc:1,pv:1,stock:81,smin:20,smax:200,und:"UND",venc:"2028-07-07",cat:"Descartables"},
+  {id:24,code:"MED024",nc:"TUBO NO CONDUCTIVO ESTÉRIL",nombre:"TUBO DE ASPIRACION 9/32X3.0M X 1",lab:"CONOD",lote:"20240702",pc:13,pv:20,stock:7,smin:5,smax:30,und:"UND",venc:"2029-06-06",cat:"Equipos Médicos"},
+  {id:25,code:"MED025",nc:"VICRYL 2/0 HR25",nombre:"ACIDO POLIGLICOLICO 2/0 HR25 PREMIUM",lab:"TAGUM",lote:"2081365",pc:5.5,pv:10,stock:28,smin:10,smax:60,und:"UND",venc:"2030-08-08",cat:"Suturas"},
+  {id:26,code:"MED026",nc:"SEDA NEGRA 2/0 DS25",nombre:"SEDA NEGRA TRENZADA 2/0 DS25 X 1",lab:"TAGUM",lote:"2012015",pc:3.5,pv:9,stock:25,smin:10,smax:60,und:"UND",venc:"2030-01-03",cat:"Suturas"},
+  {id:27,code:"MED027",nc:"SEDA NEGRA 1 DS30",nombre:"SEDA NEGRA TRENZADA 1 DS30 X 1",lab:"TAGUM",lote:"2080582",pc:3.5,pv:9,stock:35,smin:10,smax:60,und:"UND",venc:"2027-08-04",cat:"Suturas"},
+  {id:28,code:"MED028",nc:"HIBICLEN 60ML",nombre:"HIBICLEN A.V ESPUMA 4% X 60 ML",lab:"ROKER",lote:"HIB0014",pc:10,pv:20,stock:8,smin:5,smax:30,und:"UND",venc:"2028-11-11",cat:"Antisépticos"},
+  {id:29,code:"MED029",nc:"HIBICLEN 1000ML",nombre:"HIBICLEN A.V ESPUMA 4% X 1000 ML",lab:"ROKER",lote:"21101705",pc:42,pv:80,stock:7,smin:3,smax:20,und:"UND",venc:"2028-11-11",cat:"Antisépticos"},
+  {id:30,code:"MED030",nc:"FUNDA DE MAYO ESTERIL",nombre:"FUNDA DE MAYO DESCARTABLE ESTERIL 70X125CM",lab:"SMS",lote:"2080354",pc:10,pv:20,stock:7,smin:5,smax:30,und:"UND",venc:"2027-08-08",cat:"Descartables"},
+  {id:31,code:"MED031",nc:"MEROPENEM 1G",nombre:"MEROPENEN 1G POLVO SOL INY X 10",lab:"RONEM",lote:"X5GA034A",pc:18,pv:27,stock:7,smin:5,smax:30,und:"UND",venc:"2028-06-06",cat:"Antibióticos"},
+  {id:32,code:"MED032",nc:"VANCOMICINA 500MG",nombre:"VANCOMICINA 500MG INY IV X 10",lab:"HK PHARMA",lote:"243042014",pc:5,pv:12,stock:18,smin:5,smax:40,und:"UND",venc:"2027-03-03",cat:"Antibióticos"},
+  {id:33,code:"MED033",nc:"GASA ESTERIL 10X10",nombre:"GASA ESTERIL 10CM X 10CM X 5 PIEZAS",lab:"IQ MEDIC",lote:"JA250826U",pc:0.8,pv:2.5,stock:112,smin:30,smax:300,und:"UND",venc:"2030-08-08",cat:"Descartables"},
+  {id:34,code:"MED034",nc:"GUANTES ESTERIL 7.0",nombre:"GUANTES ESTERIL 7.0 X 1",lab:"TOP MEDIC",lote:"20250320",pc:0.8,pv:3,stock:50,smin:20,smax:200,und:"UND",venc:"2030-03-03",cat:"Guantes"},
+  {id:35,code:"MED035",nc:"GUANTES ESTERIL 7.5",nombre:"GUANTES ESTERIL 7.5 X 1",lab:"TRUSKIN",lote:"E24070601",pc:0.8,pv:3,stock:42,smin:20,smax:200,und:"UND",venc:"2029-07-07",cat:"Guantes"},
+];
+
+let sales=[
+  {id:1,fecha:"2026-06-01",cliente:"Hospital Regional",total:202,pago:"Transferencia"},
+  {id:2,fecha:"2026-06-05",cliente:"Clínica San Pablo",total:80,pago:"Efectivo"},
+  {id:3,fecha:"2026-06-10",cliente:"Centro Médico Lima",total:40,pago:"Tarjeta"},
+  {id:4,fecha:"2026-06-15",cliente:"Clínica Americana",total:248,pago:"Transferencia"},
+  {id:5,fecha:"2026-06-17",cliente:"Hospital Rebagliati",total:141,pago:"Efectivo"},
+];
+
+let currentUser=null;
+let currentMod="dashboard";
+let cart=[];
+let sidebarOpen=true;
+
+// ===== HELPERS =====
+function fc(n){return"S/ "+Number(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,",");}
+function daysExp(d){return Math.floor((new Date(d)-new Date("2026-06-19"))/(864e5));}
+function nextCode(){const nums=inventory.map(i=>parseInt((i.code||"MED000").replace(/\D/g,""))||0);return"MED"+String(Math.max(0,...nums)+1).padStart(3,"0");}
+function escHtml(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+function notif(msg,ok=true){
+  const n=document.getElementById("notif");
+  n.textContent=msg;
+  n.style.background=ok?"#e1f5ee":"#fcebeb";
+  n.style.color=ok?"#0F6E56":"#7A1F1F";
+  n.style.border=ok?"1px solid #0F6E56":"1px solid #A32D2D";
+  n.style.display="block";
+  setTimeout(()=>{n.style.display="none";},3500);
+}
+function render(){document.getElementById("app").innerHTML=buildApp();}
+
+// ===== BUILD UI =====
+function buildApp(){
+  if(!currentUser) return buildLogin();
+  return`
+  <div style="display:flex;height:100vh;overflow:hidden">
+    <div id="notif" style="display:none;position:fixed;top:16px;right:16px;z-index:9999;padding:12px 20px;border-radius:8px;font-size:13px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,0.15)"></div>
+    ${buildSidebar()}
+    <div style="flex:1;overflow:auto;display:flex;flex-direction:column">
+      ${buildHeader()}
+      <div style="flex:1;padding:20px;overflow:auto">${buildMod()}</div>
+    </div>
+  </div>`;
+}
+
+function buildLogin(){
+  return`<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0C447C,#185FA5)">
+  <div style="background:#fff;border-radius:16px;padding:40px 36px;width:380px;box-shadow:0 20px 60px rgba(0,0,0,0.25)">
+    <div style="text-align:center;margin-bottom:28px">
+      <div style="width:64px;height:64px;border-radius:50%;background:#E6F1FB;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:32px">💊</div>
+      <h2 style="font-size:22px;font-weight:700;color:#0C447C;margin:0 0 4px">Solution Pharma ERP</h2>
+      <p style="font-size:13px;color:#6b7280;margin:0">¡Tu Salud es Nuestra Prioridad!</p>
+    </div>
+    <div style="margin-bottom:14px">
+      <label style="font-size:12px;color:#6b7280;display:block;margin-bottom:5px;font-weight:600">USUARIO</label>
+      <input id="li_u" type="text" placeholder="Ingrese su usuario" style="width:100%;padding:10px 12px;border:2px solid #e2e5eb;border-radius:8px;font-size:14px;outline:none" onkeydown="if(event.key==='Enter')doLogin()"/>
+    </div>
+    <div style="margin-bottom:20px">
+      <label style="font-size:12px;color:#6b7280;display:block;margin-bottom:5px;font-weight:600">CONTRASEÑA</label>
+      <input id="li_p" type="password" placeholder="Ingrese su contraseña" style="width:100%;padding:10px 12px;border:2px solid #e2e5eb;border-radius:8px;font-size:14px;outline:none" onkeydown="if(event.key==='Enter')doLogin()"/>
+    </div>
+    <div id="li_err" style="display:none;padding:10px 12px;background:#fcebeb;color:#A32D2D;border-radius:8px;font-size:13px;margin-bottom:14px;font-weight:500"></div>
+    <button onclick="doLogin()" style="width:100%;padding:12px;background:#0C447C;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer">Ingresar al Sistema →</button>
+    <div style="margin-top:14px;text-align:center;font-size:12px;color:#9ca3af">
+      Contacte al administrador si olvidó sus credenciales
+    </div>
+  </div></div>`;
+}
+
+function buildSidebar(){
+  const w=sidebarOpen?"220px":"58px";
+  const nav=[
+    ["dashboard","📊","Dashboard"],["inventario","📦","Inventario"],["ventas","🛒","Ventas / POS"],
+    ["proveedores","🏪","Proveedores"],["financiero","📈","Financiero"],
+    ["rrhh","👥","Recursos Humanos"],["reportes","📋","Reportes"],["seguridad","🔒","Seguridad"]
+  ];
+  return`<div style="width:${w};min-width:${w};background:#0C447C;display:flex;flex-direction:column;transition:width 0.2s;overflow:hidden">
+    <div style="padding:14px 12px;border-bottom:1px solid rgba(255,255,255,0.15);display:flex;align-items:center;gap:8px;min-height:58px">
+      ${sidebarOpen?'<span style="color:#fff;font-weight:700;font-size:15px;white-space:nowrap">Solution Pharma</span>':""}
+      <button onclick="toggleSidebar()" style="margin-left:auto;background:rgba(255,255,255,0.15);border:none;border-radius:6px;width:32px;height:32px;cursor:pointer;color:#fff;font-size:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0">${sidebarOpen?"◀":"▶"}</button>
+    </div>
+    <nav style="flex:1;padding:6px 0;overflow-y:auto">
+      ${nav.map(([id,ico,lbl])=>`
+      <button onclick="setMod('${id}')" style="display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;background:${currentMod===id?"rgba(255,255,255,0.2)":"transparent"};border:none;cursor:pointer;color:${currentMod===id?"#fff":"rgba(255,255,255,0.65)"};font-size:13px;font-weight:${currentMod===id?"700":"400"};border-left:3px solid ${currentMod===id?"#5DCAA5":"transparent"};text-align:left;white-space:nowrap">
+        <span style="font-size:18px;flex-shrink:0">${ico}</span>
+        ${sidebarOpen?`<span>${lbl}</span>`:""}
+      </button>`).join("")}
+    </nav>
+    <div style="padding:12px 14px;border-top:1px solid rgba(255,255,255,0.15)">
+      ${sidebarOpen?`<div style="color:rgba(255,255,255,0.6);font-size:11px;margin-bottom:6px">${escHtml(currentUser.name)}</div>`:""}
+      <button onclick="doLogout()" style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.1);border:none;border-radius:6px;padding:6px 10px;color:rgba(255,255,255,0.7);cursor:pointer;font-size:12px;width:100%">
+        🚪 ${sidebarOpen?"Cerrar sesión":""}
+      </button>
+    </div>
+  </div>`;
+}
+
+function buildHeader(){
+  const titles={dashboard:"Dashboard",inventario:"Inventario",ventas:"Ventas / POS",proveedores:"Proveedores",financiero:"Financiero",rrhh:"Recursos Humanos",reportes:"Reportes",seguridad:"Seguridad"};
+  const lowStock=inventory.filter(i=>i.stock<=i.smin).length;
+  const expired=inventory.filter(i=>daysExp(i.venc)<0).length;
+  const alerts=lowStock+expired;
+  return`<div style="background:#fff;border-bottom:1px solid #e2e5eb;padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+    <h1 style="font-size:16px;font-weight:700;color:#1a1a1a">${titles[currentMod]||""}</h1>
+    <div style="display:flex;align-items:center;gap:10px">
+      ${alerts>0?`<span style="background:#fcebeb;color:#A32D2D;font-size:12px;padding:3px 10px;border-radius:5px;font-weight:700">⚠ ${alerts} alertas</span>`:""}
+      <span style="font-size:12px;background:#f4f5f7;color:#6b7280;padding:4px 10px;border-radius:5px;font-weight:600">${escHtml(currentUser.role)}</span>
+    </div>
+  </div>`;
+}
+
+function buildMod(){
+  if(currentMod==="dashboard") return buildDashboard();
+  if(currentMod==="inventario") return buildInventario();
+  if(currentMod==="ventas") return buildVentas();
+  if(currentMod==="proveedores") return buildProveedores();
+  if(currentMod==="financiero") return buildFinanciero();
+  if(currentMod==="rrhh") return buildRRHH();
+  if(currentMod==="reportes") return buildReportes();
+  if(currentMod==="seguridad") return buildSeguridad();
+  return "";
+}
+
+// ===== DASHBOARD =====
+function buildDashboard(){
+  const totalInv=inventory.reduce((s,i)=>s+i.stock*i.pc,0);
+  const totalV=sales.reduce((s,v)=>s+v.total,0)+50000;
+  const low=inventory.filter(i=>i.stock<=i.smin);
+  const exp=inventory.filter(i=>daysExp(i.venc)<0);
+  const cards=[
+    {ico:"📦",lbl:"Valor en Inventario",val:fc(totalInv),sub:`${inventory.length} productos`,bg:"#E6F1FB",c:"#0C447C"},
+    {ico:"🧾",lbl:"Ventas del Mes",val:fc(totalV),sub:`${sales.length} transacciones`,bg:"#E1F5EE",c:"#0F6E56"},
+    {ico:"⚠️",lbl:"Stock Bajo",val:low.length,sub:"productos bajo mínimo",bg:"#FAEEDA",c:"#BA7517"},
+    {ico:"📅",lbl:"Vencidos",val:exp.length,sub:"requieren retiro",bg:"#FCEBEB",c:"#A32D2D"},
+  ];
+  const lastSales=[...sales].reverse().slice(0,5);
+  return`
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:20px">
+    ${cards.map(c=>`<div style="background:#fff;border:1px solid #e2e5eb;border-radius:10px;padding:16px 20px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <div style="width:38px;height:38px;border-radius:8px;background:${c.bg};display:flex;align-items:center;justify-content:center;font-size:20px">${c.ico}</div>
+        <span style="font-size:12px;color:#6b7280">${c.lbl}</span>
+      </div>
+      <div style="font-size:22px;font-weight:700;color:${c.c}">${c.val}</div>
+      <div style="font-size:11px;color:#9ca3af;margin-top:3px">${c.sub}</div>
+    </div>`).join("")}
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px">
+    <div style="background:#fff;border:1px solid #e2e5eb;border-radius:10px;padding:20px">
+      <div style="font-weight:700;font-size:14px;margin-bottom:14px">Alertas del sistema</div>
+      ${exp.length===0&&low.length===0?'<div style="color:#9ca3af;text-align:center;padding:20px">✅ Sin alertas pendientes</div>':""}
+      ${exp.slice(0,2).map(i=>`<div style="padding:8px 10px;background:#FCEBEB;border-radius:7px;margin-bottom:8px;font-size:12px">🔴 <b>VENCIDO:</b> ${escHtml(i.nc)} — Lote: ${escHtml(i.lote)}</div>`).join("")}
+      ${low.slice(0,3).map(i=>`<div style="padding:8px 10px;background:#FAEEDA;border-radius:7px;margin-bottom:8px;font-size:12px">⚠️ Stock bajo: <b>${escHtml(i.nc)}</b> — ${i.stock} ${i.und}</div>`).join("")}
+    </div>
+    <div style="background:#fff;border:1px solid #e2e5eb;border-radius:10px;padding:20px">
+      <div style="font-weight:700;font-size:14px;margin-bottom:14px">Últimas ventas</div>
+      ${lastSales.map(s=>`<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f4f5f7;font-size:13px">
+        <div><div style="font-weight:600">${escHtml(s.cliente)}</div><div style="font-size:11px;color:#9ca3af">${s.fecha} · ${s.pago}</div></div>
+        <div style="font-weight:700;color:#0C447C">${fc(s.total)}</div>
+      </div>`).join("")}
+    </div>
+  </div>`;
+}
+
+// ===== INVENTARIO =====
+let invSearch="", invFilter="todos", invForm=null, invEditId=null, invDelId=null;
+
+function buildInventario(){
+  const canEdit=currentUser.role==="Administrador"||currentUser.role==="Almacenero";
+  const today=new Date("2026-06-19");
+  const filtered=inventory.filter(i=>{
+    const q=invSearch.toLowerCase();
+    const ok=!q||i.nc.toLowerCase().includes(q)||i.nombre.toLowerCase().includes(q)||i.lab.toLowerCase().includes(q)||(i.code||"").toLowerCase().includes(q)||(i.lote||"").toLowerCase().includes(q);
+    if(!ok)return false;
+    if(invFilter==="todos")return true;
+    if(invFilter==="bajo_stock")return i.stock<=i.smin;
+    if(invFilter==="vencidos")return daysExp(i.venc)<0;
+    if(invFilter==="por_vencer")return daysExp(i.venc)>=0&&daysExp(i.venc)<=180;
+    return i.cat===invFilter;
+  });
+
+  const cats=["Descartables","Equipos Médicos","Suturas","Antibióticos","Antisépticos","Especialidades","Jeringas","Guantes","Medicamentos","Vitaminas","Otros"];
+
+  let html=`
+  <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
+    <input value="${escHtml(invSearch)}" oninput="invSearch=this.value;render()" placeholder="Buscar código, nombre, laboratorio, lote..." style="flex:1;min-width:200px;padding:8px 12px;border:1px solid #e2e5eb;border-radius:8px;font-size:13px;outline:none"/>
+    <select onchange="invFilter=this.value;render()" style="padding:8px 12px;border:1px solid #e2e5eb;border-radius:8px;font-size:13px;outline:none;min-width:160px">
+      <option value="todos" ${invFilter==="todos"?"selected":""}>Todas las categorías</option>
+      ${cats.map(c=>`<option value="${c}" ${invFilter===c?"selected":""}>${c}</option>`).join("")}
+      <option value="bajo_stock" ${invFilter==="bajo_stock"?"selected":""}>⚠ Stock bajo</option>
+      <option value="vencidos" ${invFilter==="vencidos"?"selected":""}>🔴 Vencidos</option>
+      <option value="por_vencer" ${invFilter==="por_vencer"?"selected":""}>⏰ Por vencer (6m)</option>
+    </select>
+    <span style="font-size:12px;color:#6b7280">${filtered.length} producto(s)</span>
+    ${canEdit?`<button onclick="openInvForm(null)" style="background:#0C447C;color:#fff;border:none;border-radius:8px;padding:9px 18px;cursor:pointer;font-weight:700;font-size:13px">+ Agregar producto</button>`:""}
+  </div>
+  ${!canEdit?`<div style="padding:9px 14px;background:#E6F1FB;color:#0C447C;border-radius:7px;font-size:12px;margin-bottom:12px">👁 Modo solo lectura</div>`:""}
+  <div style="background:#fff;border:1px solid #e2e5eb;border-radius:10px;overflow:auto">
+  <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:860px">
+  <thead><tr style="background:#f4f5f7;border-bottom:1px solid #e2e5eb">
+    <th style="padding:9px 10px;text-align:left;font-weight:700;color:#6b7280;font-size:11px">CÓDIGO</th>
+    <th style="padding:9px 10px;text-align:left;font-weight:700;color:#6b7280;font-size:11px">NOMBRE CONOCIDO</th>
+    <th style="padding:9px 10px;text-align:left;font-weight:700;color:#6b7280;font-size:11px">LABORATORIO</th>
+    <th style="padding:9px 10px;text-align:left;font-weight:700;color:#6b7280;font-size:11px">LOTE</th>
+    <th style="padding:9px 10px;text-align:right;font-weight:700;color:#6b7280;font-size:11px">P.COMPRA</th>
+    <th style="padding:9px 10px;text-align:right;font-weight:700;color:#6b7280;font-size:11px">P.VENTA</th>
+    <th style="padding:9px 10px;text-align:center;font-weight:700;color:#6b7280;font-size:11px">STOCK</th>
+    <th style="padding:9px 10px;text-align:center;font-weight:700;color:#6b7280;font-size:11px">MÍN/MÁX</th>
+    <th style="padding:9px 10px;text-align:left;font-weight:700;color:#6b7280;font-size:11px">VENCIMIENTO</th>
+    ${canEdit?`<th style="padding:9px 10px;text-align:center;font-weight:700;color:#6b7280;font-size:11px">ACCIONES</th>`:""}
+  </tr></thead><tbody>
+  ${filtered.length===0?`<tr><td colspan="${canEdit?10:9}" style="padding:28px;text-align:center;color:#9ca3af">No se encontraron productos</td></tr>`:""}
+  ${filtered.map(i=>{
+    const exp=daysExp(i.venc);
+    const rowBg=exp<0?"#fff5f5":i.stock<=i.smin?"#fffbeb":"";
+    const expColor=exp<0?"#A32D2D":exp<=180?"#BA7517":"#1a1a1a";
+    return`<tr style="border-bottom:1px solid #f4f5f7;background:${rowBg}">
+      <td style="padding:8px 10px;font-family:monospace;font-size:11px;color:#6b7280">${escHtml(i.code)}</td>
+      <td style="padding:8px 10px;font-weight:700;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(i.nc)}">${escHtml(i.nc)}</td>
+      <td style="padding:8px 10px">${escHtml(i.lab)}</td>
+      <td style="padding:8px 10px;font-family:monospace;font-size:11px">${escHtml(i.lote)}</td>
+      <td style="padding:8px 10px;text-align:right">${fc(i.pc)}</td>
+      <td style="padding:8px 10px;text-align:right;font-weight:700;color:#0C447C">${fc(i.pv)}</td>
+      <td style="padding:8px 10px;text-align:center;font-weight:700;color:${i.stock<=i.smin?"#A32D2D":"#1a1a1a"}">${i.stock}</td>
+      <td style="padding:8px 10px;text-align:center;font-size:11px;color:#9ca3af">${i.smin}/${i.smax}</td>
+      <td style="padding:8px 10px;font-size:11px;color:${expColor}">${i.venc}${exp<0?" ⚠":""}</td>
+      ${canEdit?`<td style="padding:8px 10px"><div style="display:flex;gap:5px;justify-content:center">
+        <button onclick="openInvForm(${i.id})" style="background:#E6F1FB;border:none;border-radius:6px;padding:5px 10px;cursor:pointer;color:#0C447C;font-size:14px" title="Editar">✏️</button>
+        <button onclick="confirmDelInv(${i.id})" style="background:#FCEBEB;border:none;border-radius:6px;padding:5px 10px;cursor:pointer;color:#A32D2D;font-size:14px" title="Eliminar">🗑️</button>
+      </div></td>`:""}
+    </tr>`;
+  }).join("")}
+  </tbody></table></div>`;
+
+  // Modal confirmación eliminar
+  if(invDelId!==null){
+    const item=inventory.find(i=>i.id===invDelId);
+    html+=`<div style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;display:flex;align-items:center;justify-content:center">
+    <div style="background:#fff;border-radius:14px;padding:30px 32px;width:380px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.25)">
+      <div style="font-size:40px;margin-bottom:12px">🗑️</div>
+      <h3 style="font-size:17px;font-weight:700;margin:0 0 8px">¿Eliminar producto?</h3>
+      <p style="font-size:13px;color:#6b7280;margin:0 0 24px">Se eliminará <b>"${escHtml(item?.nc)}"</b> permanentemente. Esta acción no se puede deshacer.</p>
+      <div style="display:flex;gap:10px;justify-content:center">
+        <button onclick="invDelId=null;render()" style="padding:9px 22px;border-radius:7px;border:1px solid #e2e5eb;cursor:pointer;font-size:13px">Cancelar</button>
+        <button onclick="doDelInv(${invDelId})" style="padding:9px 22px;background:#A32D2D;color:#fff;border:none;border-radius:7px;cursor:pointer;font-weight:700;font-size:13px">Sí, eliminar</button>
+      </div>
+    </div></div>`;
+  }
+
+  // Panel lateral formulario
+  if(invForm!==null){
+    const f=invForm;
+    const isEdit=invEditId!==null;
+    const m=(f.pc&&f.pv)?(((+f.pv-+f.pc)/+f.pc)*100).toFixed(1):null;
+    html+=`<div style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:100;display:flex;justify-content:flex-end">
+    <div style="background:#fff;width:520px;max-width:100%;height:100vh;overflow-y:auto;display:flex;flex-direction:column;box-shadow:-4px 0 30px rgba(0,0,0,0.2)">
+      <div style="padding:18px 24px;background:#0C447C;color:#fff;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+        <div>
+          <div style="font-weight:700;font-size:17px">${isEdit?"✏️ Editar producto":"➕ Agregar nuevo producto"}</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.75);margin-top:2px">${isEdit?"Modifica los datos y guarda cambios":"Completa los datos del nuevo insumo"}</div>
+        </div>
+        <button onclick="invForm=null;invEditId=null;render()" style="background:rgba(255,255,255,0.2);border:none;border-radius:8px;width:36px;height:36px;cursor:pointer;color:#fff;font-size:20px">✕</button>
+      </div>
+      <div style="flex:1;padding:20px 24px;overflow-y:auto">
+        <div style="font-size:11px;font-weight:700;color:#6b7280;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:10px;padding-bottom:5px;border-bottom:1px solid #e2e5eb">Identificación</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px">
+          <div>
+            <label style="font-size:12px;color:#6b7280;display:block;margin-bottom:4px;font-weight:600">Código</label>
+            <input value="${escHtml(f.code)}" oninput="invForm.code=this.value" style="width:100%;padding:8px 10px;border:1px solid #e2e5eb;border-radius:7px;font-size:13px;outline:none"/>
+          </div>
+          <div>
+            <label style="font-size:12px;color:#6b7280;display:block;margin-bottom:4px;font-weight:600">Categoría</label>
+            <select onchange="invForm.cat=this.value" style="width:100%;padding:8px 10px;border:1px solid #e2e5eb;border-radius:7px;font-size:13px;outline:none">
+              ${["Descartables","Equipos Médicos","Suturas","Antibióticos","Antisépticos","Especialidades","Jeringas","Guantes","Medicamentos","Vitaminas","Otros"].map(c=>`<option ${f.cat===c?"selected":""}>${c}</option>`).join("")}
+            </select>
+          </div>
+          <div style="grid-column:span 2">
+            <label style="font-size:12px;color:#6b7280;display:block;margin-bottom:4px;font-weight:600">Nombre conocido / comercial <span style="color:#A32D2D">*</span></label>
+            <input value="${escHtml(f.nc)}" oninput="invForm.nc=this.value" placeholder="Ej: GASA ESTERIL, AGUJA EPIDURAL..." style="width:100%;padding:8px 10px;border:1px solid #e2e5eb;border-radius:7px;font-size:13px;outline:none"/>
+          </div>
+          <div style="grid-column:span 2">
+            <label style="font-size:12px;color:#6b7280;display:block;margin-bottom:4px;font-weight:600">Nombre técnico completo <span style="color:#A32D2D">*</span></label>
+            <input value="${escHtml(f.nombre)}" oninput="invForm.nombre=this.value" placeholder="Nombre según registro sanitario" style="width:100%;padding:8px 10px;border:1px solid #e2e5eb;border-radius:7px;font-size:13px;outline:none"/>
+          </div>
+          <div>
+            <label style="font-size:12px;color:#6b7280;display:block;margin-bottom:4px;font-weight:600">Laboratorio / Fabricante <span style="color:#A32D2D">*</span></label>
+            <input value="${escHtml(f.lab)}" oninput="invForm.lab=this.value" style="width:100%;padding:8px 10px;border:1px solid #e2e5eb;border-radius:7px;font-size:13px;outline:none"/>
+          </div>
+          <div>
+            <label style="font-size:12px;color:#6b7280;display:block;margin-bottom:4px;font-weight:600">Número de Lote <span style="color:#A32D2D">*</span></label>
+            <input value="${escHtml(f.lote)}" oninput="invForm.lote=this.value" style="width:100%;padding:8px 10px;border:1px solid #e2e5eb;border-radius:7px;font-size:13px;outline:none"/>
+          </div>
+        </div>
+
+        <div style="font-size:11px;font-weight:700;color:#6b7280;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:10px;padding-bottom:5px;border-bottom:1px solid #e2e5eb">Precios</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px">
+          <div>
+            <label style="font-size:12px;color:#6b7280;display:block;margin-bottom:4px;font-weight:600">Precio de compra (S/) <span style="color:#A32D2D">*</span></label>
+            <input type="number" min="0" step="0.01" value="${f.pc}" oninput="invForm.pc=+this.value;document.getElementById('margen_info').innerHTML=calcMargen()" style="width:100%;padding:8px 10px;border:1px solid #e2e5eb;border-radius:7px;font-size:13px;outline:none"/>
+          </div>
+          <div>
+            <label style="font-size:12px;color:#6b7280;display:block;margin-bottom:4px;font-weight:600">Precio de venta (S/) <span style="color:#A32D2D">*</span></label>
+            <input type="number" min="0" step="0.01" value="${f.pv}" oninput="invForm.pv=+this.value;document.getElementById('margen_info').innerHTML=calcMargen()" style="width:100%;padding:8px 10px;border:1px solid #e2e5eb;border-radius:7px;font-size:13px;outline:none"/>
+          </div>
+          <div id="margen_info" style="grid-column:span 2">${m!==null?`<div style="padding:10px 14px;background:${+m>=0?"#E1F5EE":"#FCEBEB"};border-radius:7px;font-size:13px">Margen: <b style="color:${+m>=0?"#0F6E56":"#A32D2D"}">${m}%</b> — Ganancia: ${fc(+f.pv-+f.pc)} por unidad</div>`:""}
+          </div>
+        </div>
+
+        <div style="font-size:11px;font-weight:700;color:#6b7280;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:10px;padding-bottom:5px;border-bottom:1px solid #e2e5eb">Stock y Vencimiento</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:18px">
+          <div>
+            <label style="font-size:12px;color:#6b7280;display:block;margin-bottom:4px;font-weight:600">Stock actual <span style="color:#A32D2D">*</span></label>
+            <input type="number" min="0" step="1" value="${f.stock}" oninput="invForm.stock=+this.value" style="width:100%;padding:8px 10px;border:1px solid #e2e5eb;border-radius:7px;font-size:13px;outline:none"/>
+          </div>
+          <div>
+            <label style="font-size:12px;color:#6b7280;display:block;margin-bottom:4px;font-weight:600">Stock mínimo</label>
+            <input type="number" min="0" step="1" value="${f.smin}" oninput="invForm.smin=+this.value" style="width:100%;padding:8px 10px;border:1px solid #e2e5eb;border-radius:7px;font-size:13px;outline:none"/>
+          </div>
+          <div>
+            <label style="font-size:12px;color:#6b7280;display:block;margin-bottom:4px;font-weight:600">Stock máximo</label>
+            <input type="number" min="0" step="1" value="${f.smax}" oninput="invForm.smax=+this.value" style="width:100%;padding:8px 10px;border:1px solid #e2e5eb;border-radius:7px;font-size:13px;outline:none"/>
+          </div>
+          <div>
+            <label style="font-size:12px;color:#6b7280;display:block;margin-bottom:4px;font-weight:600">Unidad</label>
+            <select onchange="invForm.und=this.value" style="width:100%;padding:8px 10px;border:1px solid #e2e5eb;border-radius:7px;font-size:13px;outline:none">
+              ${["UND","CAJAS","FRASCOS","AMPOLLAS","BLISTER","PAQUETE","PAR"].map(u=>`<option ${f.und===u?"selected":""}>${u}</option>`).join("")}
+            </select>
+          </div>
+          <div style="grid-column:span 2">
+            <label style="font-size:12px;color:#6b7280;display:block;margin-bottom:4px;font-weight:600">Fecha de vencimiento <span style="color:#A32D2D">*</span></label>
+            <input type="date" value="${escHtml(f.venc)}" oninput="invForm.venc=this.value" style="width:100%;padding:8px 10px;border:1px solid #e2e5eb;border-radius:7px;font-size:13px;outline:none"/>
+            ${f.venc&&daysExp(f.venc)<0?`<div style="font-size:11px;color:#A32D2D;margin-top:3px">⚠️ Este producto ya está vencido</div>`:""}
+            ${f.venc&&daysExp(f.venc)>=0&&daysExp(f.venc)<=180?`<div style="font-size:11px;color:#BA7517;margin-top:3px">⚠️ Vence en ${daysExp(f.venc)} días</div>`:""}
+          </div>
+        </div>
+
+        <div style="font-size:11px;font-weight:700;color:#6b7280;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:10px;padding-bottom:5px;border-bottom:1px solid #e2e5eb">Observaciones</div>
+        <textarea oninput="invForm.obs=this.value" placeholder="Notas adicionales, condiciones de almacenamiento..." rows="3" style="width:100%;padding:8px 10px;border:1px solid #e2e5eb;border-radius:7px;font-size:13px;outline:none;resize:vertical;font-family:inherit">${escHtml(f.obs||"")}</textarea>
+      </div>
+      <div style="padding:14px 24px;border-top:1px solid #e2e5eb;display:flex;gap:10px;justify-content:flex-end;flex-shrink:0;background:#fff">
+        <button onclick="invForm=null;invEditId=null;render()" style="padding:9px 20px;border:1px solid #e2e5eb;border-radius:7px;cursor:pointer;font-size:13px">Cancelar</button>
+        <button onclick="saveInv()" style="padding:9px 24px;background:#0C447C;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:14px">💾 ${isEdit?"Guardar cambios":"Agregar al inventario"}</button>
+      </div>
+    </div></div>`;
+  }
+  return html;
+}
+
+function calcMargen(){
+  if(!invForm||!invForm.pc||!invForm.pv)return"";
+  const m=(((invForm.pv-invForm.pc)/invForm.pc)*100).toFixed(1);
+  const ok=+m>=0;
+  return`<div style="padding:10px 14px;background:${ok?"#E1F5EE":"#FCEBEB"};border-radius:7px;font-size:13px">Margen: <b style="color:${ok?"#0F6E56":"#A32D2D"}">${m}%</b> — Ganancia: ${fc(invForm.pv-invForm.pc)} por unidad</div>`;
+}
+
+function openInvForm(id){
+  if(id===null){
+    invEditId=null;
+    invForm={code:nextCode(),nc:"",nombre:"",lab:"",lote:"",pc:0,pv:0,stock:0,smin:0,smax:100,und:"UND",venc:"",cat:"Descartables",obs:""};
+  }else{
+    const item=inventory.find(i=>i.id===id);
+    invEditId=id;
+    invForm={...item,obs:item.obs||""};
+  }
+  render();
+}
+
+function saveInv(){
+  const f=invForm;
+  if(!f.nc.trim()||!f.nombre.trim()||!f.lab.trim()||!f.lote.trim()||!f.venc){
+    notif("Complete todos los campos obligatorios (marcados con *)",false);return;
+  }
+  if(invEditId!==null){
+    inventory=inventory.map(i=>i.id===invEditId?{...f,id:invEditId}:i);
+    notif(`"${f.nc}" actualizado correctamente`);
+  }else{
+    inventory=[...inventory,{...f,id:Date.now()}];
+    notif(`"${f.nc}" agregado al inventario`);
+  }
+  invForm=null;invEditId=null;render();
+}
+
+function confirmDelInv(id){invDelId=id;render();}
+function doDelInv(id){
+  const item=inventory.find(i=>i.id===id);
+  inventory=inventory.filter(i=>i.id!==id);
+  invDelId=null;
+  notif(`"${item?.nc}" eliminado del inventario`);
+  render();
+}
+
+// ===== VENTAS =====
+let ventaTab="pos", ventaSearch="", ventaCliente="", ventaMetodo="Efectivo";
+
+function buildVentas(){
+  const results=ventaSearch.length>1?inventory.filter(i=>i.nc.toLowerCase().includes(ventaSearch.toLowerCase())&&i.stock>0).slice(0,7):[];
+  const total=cart.reduce((s,i)=>s+i.pv*i.qty,0);
+  const igv=total*0.18;
+  return`
+  <div style="display:flex;gap:8px;margin-bottom:18px">
+    ${[["pos","🛒 Punto de Venta"],["historial","📋 Historial"]].map(([id,lbl])=>`
+    <button onclick="ventaTab='${id}';render()" style="padding:8px 18px;border-radius:8px;border:2px solid ${ventaTab===id?"#0C447C":"#e2e5eb"};background:${ventaTab===id?"#0C447C":"#fff"};color:${ventaTab===id?"#fff":"#1a1a1a"};font-weight:${ventaTab===id?"700":"400"};cursor:pointer;font-size:13px">${lbl}</button>`).join("")}
+  </div>
+  ${ventaTab==="pos"?`
+  <div style="display:grid;grid-template-columns:1fr 310px;gap:16px">
+    <div>
+      <div style="background:#fff;border:1px solid #e2e5eb;border-radius:10px;padding:14px;margin-bottom:12px;position:relative">
+        <input value="${escHtml(ventaSearch)}" oninput="ventaSearch=this.value;render()" placeholder="Buscar y agregar producto al carrito..." style="width:100%;padding:9px 12px;border:1px solid #e2e5eb;border-radius:8px;font-size:13px;outline:none"/>
+        ${results.length>0?`<div style="position:absolute;top:calc(100% - 4px);left:14px;right:14px;background:#fff;border:1px solid #e2e5eb;border-radius:8px;z-index:10;box-shadow:0 8px 24px rgba(0,0,0,0.12)">
+          ${results.map(p=>`<div onclick="addToCart(${p.id})" style="padding:10px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid #f4f5f7" onmouseover="this.style.background='#f4f5f7'" onmouseout="this.style.background=''">
+            <div style="font-weight:700">${escHtml(p.nc)}</div>
+            <div style="font-size:11px;color:#6b7280">${escHtml(p.lab)} — Stock: ${p.stock} — ${fc(p.pv)}</div>
+          </div>`).join("")}
+        </div>`:""}
+      </div>
+      <div style="background:#fff;border:1px solid #e2e5eb;border-radius:10px;overflow:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:13px">
+          <thead><tr style="background:#f4f5f7;border-bottom:1px solid #e2e5eb">
+            ${["Producto","Precio","Cantidad","Subtotal",""].map(h=>`<th style="padding:8px 12px;text-align:left;font-weight:700;color:#6b7280;font-size:12px">${h}</th>`).join("")}
+          </tr></thead>
+          <tbody>
+            ${cart.length===0?`<tr><td colspan="5" style="padding:28px;text-align:center;color:#9ca3af">Busca productos para agregar al carrito</td></tr>`:""}
+            ${cart.map((item,idx)=>`<tr style="border-bottom:1px solid #f4f5f7">
+              <td style="padding:8px 12px;font-weight:600">${escHtml(item.nc)}</td>
+              <td style="padding:8px 12px">${fc(item.pv)}</td>
+              <td style="padding:8px 12px"><input type="number" value="${item.qty}" min="1" max="${item.stock}" onchange="updCartQty(${idx},+this.value)" style="width:60px;padding:4px 6px;border:1px solid #e2e5eb;border-radius:6px;font-size:13px;text-align:center"/></td>
+              <td style="padding:8px 12px;font-weight:700;color:#0C447C">${fc(item.pv*item.qty)}</td>
+              <td style="padding:8px 12px"><button onclick="rmFromCart(${idx})" style="background:#FCEBEB;border:none;border-radius:5px;padding:4px 8px;cursor:pointer;color:#A32D2D;font-size:14px">✕</button></td>
+            </tr>`).join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="background:#fff;border:1px solid #e2e5eb;border-radius:10px;padding:16px">
+        <div style="font-weight:700;font-size:14px;margin-bottom:12px">Datos de venta</div>
+        <label style="font-size:12px;color:#6b7280;display:block;margin-bottom:4px;font-weight:600">Cliente / Institución</label>
+        <input value="${escHtml(ventaCliente)}" oninput="ventaCliente=this.value" placeholder="Nombre del cliente" style="width:100%;padding:8px 10px;border:1px solid #e2e5eb;border-radius:7px;font-size:13px;outline:none;margin-bottom:10px"/>
+        <label style="font-size:12px;color:#6b7280;display:block;margin-bottom:4px;font-weight:600">Método de pago</label>
+        <select onchange="ventaMetodo=this.value" style="width:100%;padding:8px 10px;border:1px solid #e2e5eb;border-radius:7px;font-size:13px;outline:none">
+          ${["Efectivo","Tarjeta","Transferencia","Yape","Plin","Crédito"].map(m=>`<option ${ventaMetodo===m?"selected":""}>${m}</option>`).join("")}
+        </select>
+      </div>
+      <div style="background:#0C447C;border-radius:10px;padding:20px;color:#fff">
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px"><span>Subtotal</span><span>${fc(total-igv)}</span></div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:12px;font-size:13px"><span>IGV (18%)</span><span>${fc(igv)}</span></div>
+        <div style="border-top:1px solid rgba(255,255,255,0.3);padding-top:12px;display:flex;justify-content:space-between;font-size:20px;font-weight:700"><span>TOTAL</span><span>${fc(total)}</span></div>
+        <button onclick="finalizeSale()" style="width:100%;margin-top:16px;padding:12px;background:#5DCAA5;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer">✅ Finalizar venta</button>
+      </div>
+    </div>
+  </div>`:`
+  <div style="background:#fff;border:1px solid #e2e5eb;border-radius:10px;overflow:auto">
+    <table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead><tr style="background:#f4f5f7;border-bottom:1px solid #e2e5eb">
+        ${["#","Fecha","Cliente","Total","Pago","Estado"].map(h=>`<th style="padding:8px 12px;text-align:left;font-weight:700;color:#6b7280;font-size:12px">${h}</th>`).join("")}
+      </tr></thead>
+      <tbody>${[...sales].reverse().map(s=>`<tr style="border-bottom:1px solid #f4f5f7">
+        <td style="padding:8px 12px;font-family:monospace;font-size:11px">#${String(s.id).padStart(5,"0")}</td>
+        <td style="padding:8px 12px">${s.fecha}</td>
+        <td style="padding:8px 12px;font-weight:600">${escHtml(s.cliente)}</td>
+        <td style="padding:8px 12px;font-weight:700;color:#0C447C">${fc(s.total)}</td>
+        <td style="padding:8px 12px">${s.pago}</td>
+        <td style="padding:8px 12px"><span style="background:#E1F5EE;color:#0F6E56;font-size:11px;padding:2px 8px;border-radius:5px;font-weight:600">Completada</span></td>
+      </tr>`).join("")}</tbody>
+    </table>
+  </div>`}`;
+}
+
+function addToCart(id){const item=inventory.find(i=>i.id===id);if(!item)return;const ex=cart.find(c=>c.id===id);if(ex)cart=cart.map(c=>c.id===id?{...c,qty:c.qty+1}:c);else cart=[...cart,{...item,qty:1}];ventaSearch="";render();}
+function rmFromCart(idx){cart=cart.filter((_,i)=>i!==idx);render();}
+function updCartQty(idx,q){cart=cart.map((c,i)=>i===idx?{...c,qty:Math.max(1,q)}:c);render();}
+function finalizeSale(){
+  const total=cart.reduce((s,i)=>s+i.pv*i.qty,0);
+  if(!cart.length||!ventaCliente){notif("Complete el cliente y agregue productos",false);return;}
+  sales=[...sales,{id:Date.now(),fecha:new Date().toISOString().split("T")[0],cliente:ventaCliente,total,pago:ventaMetodo}];
+  inventory=inventory.map(i=>{const ci=cart.find(c=>c.id===i.id);return ci?{...i,stock:i.stock-ci.qty}:i;});
+  cart=[];ventaCliente="";ventaSearch="";
+  notif(`Venta por ${fc(total)} registrada exitosamente`);
+  ventaTab="historial";render();
+}
+
+// ===== PROVEEDORES =====
+let proveedores=[
+  {id:1,nombre:"TAGUM S.A.",ruc:"20123456789",contacto:"Juan Pérez",tel:"01-234-5678",email:"ventas@tagum.com"},
+  {id:2,nombre:"3M PERÚ",ruc:"20987654321",contacto:"María López",tel:"01-876-5432",email:"contacto@3mperu.com"},
+  {id:3,nombre:"SMS MEDICAL",ruc:"20456789012",contacto:"Carlos Ruiz",tel:"01-456-7890",email:"sms@medical.pe"},
+  {id:4,nombre:"ONE JECT",ruc:"20345678901",contacto:"Ana Torres",tel:"01-345-6789",email:"info@oneject.com"},
+];
+let provForm=null,provEditId=null;
+function buildProveedores(){
+  let html=`<div style="display:flex;justify-content:flex-end;margin-bottom:14px">
+    <button onclick="openProvForm(null)" style="background:#0C447C;color:#fff;border:none;border-radius:8px;padding:9px 18px;cursor:pointer;font-weight:700;font-size:13px">+ Nuevo proveedor</button>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px">
+    ${proveedores.map(p=>`<div style="background:#fff;border:1px solid #e2e5eb;border-radius:10px;padding:16px 20px">
+      <div style="font-weight:700;font-size:15px;margin-bottom:4px">${escHtml(p.nombre)}</div>
+      <div style="font-size:11px;color:#9ca3af;margin-bottom:10px">RUC: ${escHtml(p.ruc)}</div>
+      <div style="font-size:12px;color:#6b7280;display:flex;flex-direction:column;gap:4px">
+        <span>👤 ${escHtml(p.contacto)}</span><span>📞 ${escHtml(p.tel)}</span><span>✉️ ${escHtml(p.email)}</span>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button onclick="openProvForm(${p.id})" style="flex:1;padding:7px;cursor:pointer;border-radius:7px;border:1px solid #e2e5eb;font-size:12px">✏️ Editar</button>
+        <button onclick="delProv(${p.id})" style="flex:1;padding:7px;cursor:pointer;border-radius:7px;border:1px solid #e2e5eb;font-size:12px;color:#A32D2D">🗑️ Eliminar</button>
+      </div>
+    </div>`).join("")}
+  </div>`;
+  if(provForm!==null){
+    const f=provForm;
+    html+=`<div style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:100;display:flex;align-items:center;justify-content:center">
+    <div style="background:#fff;border-radius:14px;padding:24px;width:450px;box-shadow:0 20px 60px rgba(0,0,0,0.2)">
+      <h3 style="font-size:16px;font-weight:700;margin:0 0 18px">${provEditId?"Editar proveedor":"Nuevo proveedor"}</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        ${[["Nombre","nombre","span 2"],["RUC","ruc","span 1"],["Contacto","contacto","span 1"],["Teléfono","tel","span 1"],["Email","email","span 2"]].map(([lbl,key,span])=>`
+        <div style="grid-column:${span}">
+          <label style="font-size:12px;color:#6b7280;display:block;margin-bottom:4px;font-weight:600">${lbl}</label>
+          <input value="${escHtml(f[key]||"")}" oninput="provForm.${key}=this.value" style="width:100%;padding:8px 10px;border:1px solid #e2e5eb;border-radius:7px;font-size:13px;outline:none"/>
+        </div>`).join("")}
+      </div>
+      <div style="display:flex;gap:10px;margin-top:18px;justify-content:flex-end">
+        <button onclick="provForm=null;provEditId=null;render()" style="padding:9px 20px;border:1px solid #e2e5eb;border-radius:7px;cursor:pointer">Cancelar</button>
+        <button onclick="saveProv()" style="padding:9px 20px;background:#0C447C;color:#fff;border:none;border-radius:7px;cursor:pointer;font-weight:700">Guardar</button>
+      </div>
+    </div></div>`;
+  }
+  return html;
+}
+function openProvForm(id){if(id===null){provEditId=null;provForm={nombre:"",ruc:"",contacto:"",tel:"",email:""};}else{provEditId=id;provForm={...proveedores.find(p=>p.id===id)};}render();}
+function saveProv(){if(!provForm.nombre){notif("El nombre es requerido",false);return;}if(provEditId)proveedores=proveedores.map(p=>p.id===provEditId?{...provForm,id:provEditId}:p);else proveedores=[...proveedores,{...provForm,id:Date.now()}];notif(provEditId?"Proveedor actualizado":"Proveedor registrado");provForm=null;provEditId=null;render();}
+function delProv(id){proveedores=proveedores.filter(p=>p.id!==id);notif("Proveedor eliminado");render();}
+
+// ===== FINANCIERO =====
+function buildFinanciero(){
+  const totalV=sales.reduce((s,v)=>s+v.total,0)+314000;
+  const gastos=12500;const util=totalV-gastos;
+  const totalInv=inventory.reduce((s,i)=>s+i.stock*i.pc,0);
+  return`
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:20px">
+    ${[["📈","Ventas totales",fc(totalV),"#E1F5EE","#0F6E56"],["📦","Valor inventario",fc(totalInv),"#E6F1FB","#0C447C"],["💸","Gastos operativos",fc(gastos),"#FAEEDA","#BA7517"],["💰","Utilidad neta",fc(util*0.82),"#E1F5EE","#0F6E56"]].map(([ico,lbl,val,bg,c])=>`
+    <div style="background:#fff;border:1px solid #e2e5eb;border-radius:10px;padding:16px 20px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <div style="width:38px;height:38px;border-radius:8px;background:${bg};display:flex;align-items:center;justify-content:center;font-size:20px">${ico}</div>
+        <span style="font-size:12px;color:#6b7280">${lbl}</span>
+      </div>
+      <div style="font-size:22px;font-weight:700;color:${c}">${val}</div>
+    </div>`).join("")}
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+    <div style="background:#fff;border:1px solid #e2e5eb;border-radius:10px;padding:20px">
+      <div style="font-weight:700;font-size:14px;margin-bottom:14px">Estado de Resultados</div>
+      ${[["Ingresos por ventas",totalV,false],["(-) Costo de ventas",gastos*0.6,true],["Utilidad bruta",totalV-gastos*0.6,false],["(-) Gastos operativos",gastos*0.4,true],["Utilidad operativa",util,false],["(-) IGV (18%)",util*0.18,true],["Utilidad neta",util*0.82,false]].map(([lbl,val,neg])=>`
+      <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f4f5f7;font-size:13px">
+        <span style="color:${neg?"#A32D2D":lbl.includes("neta")?"#1a1a1a":"#6b7280"};font-weight:${lbl.includes("neta")?"700":"400"}">${lbl}</span>
+        <span style="font-weight:${lbl.includes("neta")?"700":"400"};color:${neg?"#A32D2D":lbl.includes("neta")?"#0F6E56":"#1a1a1a"}">${neg?"-":""}${fc(Math.abs(val))}</span>
+      </div>`).join("")}
+    </div>
+    <div style="background:#fff;border:1px solid #e2e5eb;border-radius:10px;padding:20px">
+      <div style="font-weight:700;font-size:14px;margin-bottom:14px">Ventas mensuales 2026</div>
+      ${[["Ene",45000],["Feb",52000],["Mar",48000],["Abr",61000],["May",58000],["Jun",71000]].map(([m,v])=>`
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-size:12px;color:#6b7280;width:30px">${m}</span>
+        <div style="flex:1;height:14px;background:#f4f5f7;border-radius:3px;margin:0 10px">
+          <div style="height:100%;width:${Math.round((v/71000)*100)}%;background:#0C447C;border-radius:3px"></div>
+        </div>
+        <span style="font-size:12px;font-weight:600;width:80px;text-align:right">${fc(v)}</span>
+      </div>`).join("")}
+    </div>
+  </div>`;
+}
+
+// ===== RRHH =====
+let empleados=[
+  {id:1,nombre:"Carmen Valdivia",cargo:"Administradora",area:"Administración",salario:3500,turno:"Mañana",estado:"Activo"},
+  {id:2,nombre:"Luis Mendoza",cargo:"Vendedor Senior",area:"Ventas",salario:2200,turno:"Mañana",estado:"Activo"},
+  {id:3,nombre:"Rosa Quispe",cargo:"Químico Farmacéutico",area:"Farmacia",salario:4000,turno:"Mañana",estado:"Activo"},
+  {id:4,nombre:"Marco Huanca",cargo:"Almacenero",area:"Almacén",salario:1800,turno:"Tarde",estado:"Activo"},
+  {id:5,nombre:"Silvia Castro",cargo:"Cajera",area:"Ventas",salario:1600,turno:"Tarde",estado:"Activo"},
+];
+let empForm=null,empEditId=null;
+function buildRRHH(){
+  const total=empleados.reduce((s,e)=>s+e.salario,0);
+  let html=`
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px">
+    ${[["👥","Total empleados",empleados.length,"#E6F1FB","#0C447C"],["💰","Planilla mensual",fc(total),"#E1F5EE","#0F6E56"],["✅","Empleados activos",empleados.filter(e=>e.estado==="Activo").length,"#E1F5EE","#0F6E56"]].map(([ico,lbl,val,bg,c])=>`
+    <div style="background:#fff;border:1px solid #e2e5eb;border-radius:10px;padding:16px 20px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <div style="width:38px;height:38px;border-radius:8px;background:${bg};display:flex;align-items:center;justify-content:center;font-size:20px">${ico}</div>
+        <span style="font-size:12px;color:#6b7280">${lbl}</span>
+      </div>
+      <div style="font-size:22px;font-weight:700;color:${c}">${val}</div>
+    </div>`).join("")}
+  </div>
+  <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+    <button onclick="openEmpForm(null)" style="background:#0C447C;color:#fff;border:none;border-radius:8px;padding:9px 18px;cursor:pointer;font-weight:700;font-size:13px">+ Nuevo empleado</button>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px">
+    ${empleados.map(e=>`<div style="background:#fff;border:1px solid #e2e5eb;border-radius:10px;padding:16px 20px">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+        <div style="width:44px;height:44px;border-radius:50%;background:#E6F1FB;display:flex;align-items:center;justify-content:center;font-weight:700;color:#0C447C;font-size:15px">${e.nombre.split(" ").map(n=>n[0]).slice(0,2).join("")}</div>
+        <div><div style="font-weight:700;font-size:14px">${escHtml(e.nombre)}</div><div style="font-size:11px;color:#9ca3af">${escHtml(e.cargo)} — ${escHtml(e.area)}</div></div>
+      </div>
+      <div style="font-size:12px;color:#6b7280;display:grid;grid-template-columns:1fr 1fr;gap:5px">
+        <span>💰 ${fc(e.salario)}</span><span>🕐 ${e.turno}</span>
+        <span style="color:${e.estado==="Activo"?"#0F6E56":"#A32D2D"};font-weight:600">● ${e.estado}</span>
+      </div>
+      <button onclick="openEmpForm(${e.id})" style="width:100%;margin-top:12px;padding:7px;cursor:pointer;border-radius:7px;border:1px solid #e2e5eb;font-size:12px">✏️ Editar</button>
+    </div>`).join("")}
+  </div>`;
+  if(empForm!==null){
+    const f=empForm;
+    html+=`<div style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:100;display:flex;align-items:center;justify-content:center">
+    <div style="background:#fff;border-radius:14px;padding:24px;width:430px;box-shadow:0 20px 60px rgba(0,0,0,0.2)">
+      <h3 style="font-size:16px;font-weight:700;margin:0 0 18px">${empEditId?"Editar empleado":"Nuevo empleado"}</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div style="grid-column:span 2">
+          <label style="font-size:12px;color:#6b7280;display:block;margin-bottom:4px;font-weight:600">Nombre completo</label>
+          <input value="${escHtml(f.nombre)}" oninput="empForm.nombre=this.value" style="width:100%;padding:8px 10px;border:1px solid #e2e5eb;border-radius:7px;font-size:13px;outline:none"/>
+        </div>
+        <div style="grid-column:span 2">
+          <label style="font-size:12px;color:#6b7280;display:block;margin-bottom:4px;font-weight:600">Cargo</label>
+          <input value="${escHtml(f.cargo)}" oninput="empForm.cargo=this.value" style="width:100%;padding:8px 10px;border:1px solid #e2e5eb;border-radius:7px;font-size:13px;outline:none"/>
+        </div>
+        <div>
+          <label style="font-size:12px;color:#6b7280;display:block;margin-bottom:4px;font-weight:600">Salario (S/)</label>
+          <input type="number" value="${f.salario}" oninput="empForm.salario=+this.value" style="width:100%;padding:8px 10px;border:1px solid #e2e5eb;border-radius:7px;font-size:13px;outline:none"/>
+        </div>
+        <div>
+          <label style="font-size:12px;color:#6b7280;display:block;margin-bottom:4px;font-weight:600">Área</label>
+          <select onchange="empForm.area=this.value" style="width:100%;padding:8px 10px;border:1px solid #e2e5eb;border-radius:7px;font-size:13px;outline:none">
+            ${["Administración","Ventas","Farmacia","Almacén","Logística"].map(a=>`<option ${f.area===a?"selected":""}>${a}</option>`).join("")}
+          </select>
+        </div>
+        <div>
+          <label style="font-size:12px;color:#6b7280;display:block;margin-bottom:4px;font-weight:600">Turno</label>
+          <select onchange="empForm.turno=this.value" style="width:100%;padding:8px 10px;border:1px solid #e2e5eb;border-radius:7px;font-size:13px;outline:none">
+            ${["Mañana","Tarde","Noche"].map(t=>`<option ${f.turno===t?"selected":""}>${t}</option>`).join("")}
+          </select>
+        </div>
+        <div>
+          <label style="font-size:12px;color:#6b7280;display:block;margin-bottom:4px;font-weight:600">Estado</label>
+          <select onchange="empForm.estado=this.value" style="width:100%;padding:8px 10px;border:1px solid #e2e5eb;border-radius:7px;font-size:13px;outline:none">
+            ${["Activo","Inactivo"].map(s=>`<option ${f.estado===s?"selected":""}>${s}</option>`).join("")}
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:18px;justify-content:flex-end">
+        <button onclick="empForm=null;empEditId=null;render()" style="padding:9px 20px;border:1px solid #e2e5eb;border-radius:7px;cursor:pointer">Cancelar</button>
+        <button onclick="saveEmp()" style="padding:9px 20px;background:#0C447C;color:#fff;border:none;border-radius:7px;cursor:pointer;font-weight:700">Guardar</button>
+      </div>
+    </div></div>`;
+  }
+  return html;
+}
+function openEmpForm(id){if(id===null){empEditId=null;empForm={nombre:"",cargo:"",area:"Ventas",salario:0,turno:"Mañana",estado:"Activo"};}else{empEditId=id;empForm={...empleados.find(e=>e.id===id)};}render();}
+function saveEmp(){if(!empForm.nombre){notif("El nombre es requerido",false);return;}if(empEditId)empleados=empleados.map(e=>e.id===empEditId?{...empForm,id:empEditId}:e);else empleados=[...empleados,{...empForm,id:Date.now()}];notif(empEditId?"Empleado actualizado":"Empleado registrado");empForm=null;empEditId=null;render();}
+
+// ===== REPORTES =====
+function buildReportes(){
+  const bycat={};inventory.forEach(i=>{bycat[i.cat]=(bycat[i.cat]||0)+i.stock;});
+  const max=Math.max(...Object.values(bycat),1);
+  return`
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+    <div style="background:#fff;border:1px solid #e2e5eb;border-radius:10px;padding:20px">
+      <div style="font-weight:700;font-size:14px;margin-bottom:14px">Top productos por stock</div>
+      ${[...inventory].sort((a,b)=>b.stock-a.stock).slice(0,8).map((i,idx)=>`
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f4f5f7;font-size:13px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="width:22px;height:22px;border-radius:50%;background:#E6F1FB;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#0C447C">${idx+1}</span>
+          <span style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(i.nc)}</span>
+        </div>
+        <span style="font-weight:700;color:#0C447C">${i.stock} ${i.und}</span>
+      </div>`).join("")}
+    </div>
+    <div style="background:#fff;border:1px solid #e2e5eb;border-radius:10px;padding:20px">
+      <div style="font-weight:700;font-size:14px;margin-bottom:14px">Stock por categoría</div>
+      ${Object.entries(bycat).map(([cat,total])=>`
+      <div style="margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px"><span>${escHtml(cat)}</span><span style="font-weight:700">${total}</span></div>
+        <div style="height:6px;background:#f4f5f7;border-radius:3px"><div style="height:100%;width:${Math.min((total/max)*100,100)}%;background:#0C447C;border-radius:3px"></div></div>
+      </div>`).join("")}
+    </div>
+  </div>
+  <div style="background:#fff;border:1px solid #e2e5eb;border-radius:10px;padding:20px">
+    <div style="font-weight:700;font-size:14px;margin-bottom:14px">Resumen de ventas 2026</div>
+    <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px">
+      ${[["Ene",45000],["Feb",52000],["Mar",48000],["Abr",61000],["May",58000],["Jun",71000]].map(([m,v])=>`
+      <div style="text-align:center;padding:12px 6px;background:#f4f5f7;border-radius:8px">
+        <div style="font-size:12px;font-weight:700;color:#0C447C">${fc(v)}</div>
+        <div style="font-size:11px;color:#6b7280;margin-top:4px">${m}</div>
+      </div>`).join("")}
+    </div>
+  </div>`;
+}
+
+// ===== SEGURIDAD =====
+function buildSeguridad(){
+  return`
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+    <div style="background:#fff;border:1px solid #e2e5eb;border-radius:10px;padding:20px">
+      <div style="font-weight:700;font-size:14px;margin-bottom:14px">Usuarios del sistema</div>
+      ${USERS.map(u=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f4f5f7">
+        <div><div style="font-weight:600;font-size:14px">${escHtml(u.name)}</div><div style="font-size:11px;color:#9ca3af">@${escHtml(u.username)} — ${escHtml(u.role)}</div></div>
+        <span style="background:#E1F5EE;color:#0F6E56;font-size:11px;padding:2px 8px;border-radius:5px;font-weight:600">Activo</span>
+      </div>`).join("")}
+    </div>
+    <div style="background:#fff;border:1px solid #e2e5eb;border-radius:10px;padding:20px">
+      <div style="font-weight:700;font-size:14px;margin-bottom:14px">Permisos por rol</div>
+      ${[["👑 Administrador",["Acceso total","Inventario","Ventas","Compras","RRHH","Reportes","Seguridad"]],["🛒 Vendedor",["Ventas/POS","Ver inventario"]],["📦 Almacenero",["Inventario","Compras","Proveedores"]]].map(([rol,perms])=>`
+      <div style="margin-bottom:14px">
+        <div style="font-size:13px;font-weight:700;margin-bottom:6px;color:#0C447C">${rol}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px">${perms.map(p=>`<span style="background:#E6F1FB;color:#0C447C;font-size:11px;padding:2px 8px;border-radius:5px">${p}</span>`).join("")}</div>
+      </div>`).join("")}
+    </div>
+  </div>
+  <div style="background:#fff;border:1px solid #e2e5eb;border-radius:10px;padding:20px">
+    <div style="font-weight:700;font-size:14px;margin-bottom:14px">Bitácora de actividades</div>
+    <table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead><tr style="background:#f4f5f7;border-bottom:1px solid #e2e5eb">
+        ${["Usuario","Acción","Módulo","Fecha/Hora"].map(h=>`<th style="padding:8px 12px;text-align:left;font-weight:700;color:#6b7280;font-size:12px">${h}</th>`).join("")}
+      </tr></thead>
+      <tbody>${[
+        {u:"admin",a:"Inicio de sesión",m:"Sistema",f:"2026-06-19 09:15"},
+        {u:"vendedor",a:"Registró venta #1005",m:"Ventas",f:"2026-06-19 09:22"},
+        {u:"admin",a:"Agregó producto",m:"Inventario",f:"2026-06-19 10:05"},
+        {u:"almacen",a:"Actualizó stock",m:"Inventario",f:"2026-06-19 11:30"},
+        {u:"admin",a:"Generó reporte mensual",m:"Reportes",f:"2026-06-19 14:00"},
+      ].reverse().map(l=>`<tr style="border-bottom:1px solid #f4f5f7">
+        <td style="padding:8px 12px;font-weight:700;color:#0C447C">@${l.u}</td>
+        <td style="padding:8px 12px">${l.a}</td>
+        <td style="padding:8px 12px"><span style="background:#f4f5f7;font-size:11px;padding:2px 8px;border-radius:5px">${l.m}</span></td>
+        <td style="padding:8px 12px;font-family:monospace;font-size:11px;color:#6b7280">${l.f}</td>
+      </tr>`).join("")}</tbody>
+    </table>
+  </div>`;
+}
+
+// ===== ACCIONES GLOBALES =====
+function doLogin(){
+  const u=document.getElementById("li_u").value.trim();
+  const p=document.getElementById("li_p").value;
+  const found=USERS.find(x=>x.username===u&&x.password===p);
+  if(found){currentUser=found;render();}
+  else{const e=document.getElementById("li_err");e.textContent="❌ Usuario o contraseña incorrectos. Intente de nuevo.";e.style.display="block";}
+}
+function doLogout(){currentUser=null;currentMod="dashboard";cart=[];render();}
+function setMod(m){currentMod=m;invSearch="";invFilter="todos";invForm=null;invEditId=null;invDelId=null;render();}
+function toggleSidebar(){sidebarOpen=!sidebarOpen;render();}
+
+// ===== INICIAR =====
+window.onload=function(){
+  document.getElementById("loading").style.display="none";
+  document.getElementById("app").innerHTML="";
+  render();
+};
+</script>
+
+<div id="app"></div>
+</body>
+</html>
